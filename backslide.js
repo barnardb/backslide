@@ -221,8 +221,25 @@ class BackslideCli {
       watchOptions: {
         ignored: 'node_modules'
       },
+      middleware: this._createIdeaMiddleware(dir),
       browser: open ? undefined : []
     });
+  }
+
+  _createIdeaMiddleware(dir) {
+    return function ideaMiddleware(req, res, next) {
+      const parsed = require('url').parse(req.url);
+      if (parsed.pathname.match(/\.(java|scala)$/)) {
+        const command = 'open -a "IntelliJ IDEA" ' + dir + parsed.pathname;
+        console.log(command);
+        const idea = require('child_process').exec(command);
+        idea.stdout.pipe(process.stdout);
+        idea.stderr.pipe(process.stderr);
+        res.statusCode = 204;
+        return res.end();
+      }
+      next();
+    };
   }
 
   _serveFile(dir, file) {
